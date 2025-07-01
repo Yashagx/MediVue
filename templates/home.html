@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MediVue - Simplifying Medicine for Everyone</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <script defer src="{{ url_for('static', filename='js/home.js') }}"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+
+<!-- Navbar -->
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">MediVue</div>
+        <div class="auth-buttons">
+            <a href="/login"><button class="btn-secondary">Login</button></a>
+            <a href="/signup"><button class="btn-secondary">Sign Up</button></a>
+        </div>
+    </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>MediVue: Simplifying Medicine for Everyone</h1>
+        <p>Instantly identify medicines, analyze prescriptions, set medication reminders, and get multilingual medical assistance—all without mandatory login.</p>
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features-container">
+    <div class="cards">
+        <div class="card" data-tab="identify">
+            <a href="/medicine-identification" class="card-link">
+                <i class="fas fa-pills"></i>
+                <h3>Medicine Identification</h3>
+                <p>Upload a photo to identify medicine details.</p>
+            </a>
+        </div>
+
+        <div class="card" data-tab="prescriptions">
+            <a href="/prescription-analyzer" class="card-link">
+                <i class="fas fa-file-medical"></i>
+                <h3>Prescription Analyzer</h3>
+                <p>Extract medicine names from prescriptions.</p>
+            </a>
+        </div>
+
+        <div class="card" data-tab="tracker">
+            <a href="/medicine-tracker" class="card-link">
+                <i class="fas fa-clock"></i>
+                <h3>Medicine Tracker</h3>
+                <p>Set reminders for your medicine schedule.</p>
+            </a>
+        </div>
+    </div>
+</section>
+
+</body>
+</html>

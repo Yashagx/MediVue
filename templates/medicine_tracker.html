@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Medicine Tracker - MediVue</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Segoe UI', sans-serif;
+            background-color: #f8f9fa;
+        }
+
+        .features-container {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+        }
+
+        .feature-details {
+            background: #ffffff;
+            padding: 2.5rem 3rem;
+            border-radius: 16px;
+            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
+            max-width: 480px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .feature-details i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+            color: #01796F;
+        }
+
+        .feature-details h2 {
+            font-size: 1.6rem;
+            margin-bottom: 1.2rem;
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            margin-top: 1rem;
+        }
+
+        input[type="text"],
+        input[type="date"],
+        input[type="time"] {
+            padding: 0.7rem;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            background-color: #fff;
+        }
+
+        button[type="submit"] {
+            background-color: #01796F;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background-color: #01665c;
+        }
+
+        .btn-secondary {
+            margin-left: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">MediVue</div>
+        <a href="/"><button class="btn-secondary">Home</button></a>
+    </div>
+</nav>
+
+<section class="features-container">
+    <div class="feature-details">
+        <i class="fas fa-clock"></i>
+        <h2>Medicine Tracker</h2>
+        <form id="reminderForm">
+            <input type="text" name="medicine" placeholder="Medicine Name" required>
+            <input type="date" name="date" required>
+            <input type="time" name="time" required>
+            <button type="submit">Set Reminder</button>
+        </form>
+    </div>
+</section>
+
+</body>
+</html>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MediVue - Medicine Identifier</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8f9fa;
+    }
+    .navbar {
+      background-color: #034b45;
+      color: white;
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .logo {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+    .main-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      padding: 2rem;
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+    }
+    .card h2 {
+      color: #034b45;
+      margin-bottom: 1rem;
+    }
+    input[type="file"],
+    button,
+    select {
+      padding: 0.6rem;
+      width: 100%;
+      margin-top: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    button {
+      background-color: #01796F;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #01665e;
+    }
+    .result-img {
+      width: 100%;
+      max-height: 200px;
+      object-fit: contain;
+      margin: 1rem 0;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+    }
+    .result-details p {
+      margin: 0.5rem 0;
+    }
+    .audio-controls {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    .btn-row {
+      display: flex;
+      gap: 1rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255,255,255,0.8);
+      backdrop-filter: blur(3px);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      font-size: 1.2rem;
+      font-weight: bold;
+    }
+    #translationOverlay {
+      position: fixed;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 80%;
+      max-height: 70%;
+      background: white;
+      border-radius: 10px;
+      padding: 1.5rem;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+    }
+    #translationOverlay h3 {
+      margin-top: 0;
+    }
+    .close-btn {
+      float: right;
+      font-size: 1.2rem;
+      cursor: pointer;
+      color: #444;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Loading -->
+<div id="loadingOverlay">
+  <i class="fas fa-spinner fa-spin"></i> Loading, please wait...
+</div>
+
+<!-- Translation Overlay -->
+<div id="translationOverlay">
+  <span class="close-btn" onclick="closeTranslation()">&times;</span>
+  <h3>Translated Text</h3>
+  <p id="translatedOutput"></p>
+  <audio id="translatedAudio" controls style="margin-top:1rem;"></audio>
+</div>
+
+<!-- Navbar -->
+<nav class="navbar">
+  <div class="logo">MediVue</div>
+  <a href="/" class="button-link"><button>Home</button></a>
+</nav>
+
+<!-- Main Layout -->
+<div class="main-wrapper">
+
+  <!-- Card 2: Medicine Details -->
+  <div class="card" id="resultCard" style="display: none;">
+    <h2><i class="fas fa-pills"></i> Medicine Details</h2>
+    <div class="result-details" id="detailsText"></div>
+
+    <div class="btn-row">
+      <button onclick="confirmMatch(true)">Yes, this is correct</button>
+      <button onclick="confirmMatch(false)">No, it's not</button>
+    </div>
+
+    <div class="audio-controls">
+      <select id="languageSelect">
+        <option value="en">English</option>
+        <option value="hi">Hindi - हिन्दी</option>
+        <option value="ta">Tamil - தமிழ்</option>
+        <option value="te">Telugu - తెలుగు</option>
+        <option value="bn">Bengali - বাংলা</option>
+        <option value="gu">Gujarati - ગુજરાતી</option>
+        <option value="ml">Malayalam - മലയാളം</option>
+        <option value="mr">Marathi - मराठी</option>
+        <option value="pa">Punjabi - ਪੰਜਾਬੀ</option>
+        <option value="kn">Kannada - ಕನ್ನಡ</option>
+        <option value="ur">Urdu - اردو</option>
+      </select>
+      <button onclick="translateAndSpeak()">🎧 Play Voice</button>
+      <button onclick="stopSpeech()">🔇 Mute</button>
+    </div>
+  </div>
+
+  <!-- Card 1: Upload Image + Extracted -->
+  <div class="card">
+    <h2><i class="fas fa-cloud-upload-alt"></i> Upload Medicine Image</h2>
+    <form id="uploadForm">
+      <input type="file" id="fileInput" required />
+      <button type="submit">Upload & Identify</button>
+    </form>
+
+    <img id="uploadedImage" class="result-img" src="" style="display:none;" />
+    <div class="result-details" id="ocrCard" style="display:none;">
+      <p><strong>Bold Texts Detected:</strong></p>
+      <p id="boldText"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+function confirmMatch(ok) {
+  alert(ok ? "Thanks for confirming!" : "We'll try to improve accuracy.");
+}
+function closeTranslation() {
+  document.getElementById("translationOverlay").style.display = "none";
+  document.getElementById("translatedAudio").pause();
+}
+function stopSpeech() {
+  document.getElementById("translatedAudio").pause();
+}
+function translateAndSpeak() {
+  const lang = document.getElementById("languageSelect").value;
+  const text = document.getElementById("detailsText").innerText;
+
+  document.getElementById("loadingOverlay").style.display = "flex";
+
+  fetch("http://127.0.0.1:5001/translate-details", {
+    method: "POST",
+    body: new URLSearchParams({ details_text: text, target_lang: lang })
+  })
+    .then(res => res.json())
+    .then(data => {
+      const translated = data.translated_text || "Translation failed.";
+      document.getElementById("translatedOutput").innerText = translated;
+      document.getElementById("translationOverlay").style.display = "block";
+
+      return fetch("http://127.0.0.1:5001/generate-audio", {
+        method: "POST",
+        body: new URLSearchParams({ details_text: translated, lang: lang })
+      });
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("translatedAudio").src = "http://127.0.0.1:5001" + data.audio_path;
+    })
+    .catch(err => {
+      alert("Translation/audio failed");
+      console.error(err);
+    })
+    .finally(() => {
+      document.getElementById("loadingOverlay").style.display = "none";
+    });
+}
+
+document.getElementById("uploadForm").addEventListener("submit", function (e) {
+  e.preventDefault();
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return alert("Please select a file");
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById("uploadedImage").src = reader.result;
+    document.getElementById("uploadedImage").style.display = "block";
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById("loadingOverlay").style.display = "flex";
+
+  fetch("http://127.0.0.1:5001/process-image", {
+    method: "POST",
+    body: formData
+  })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("loadingOverlay").style.display = "none";
+
+      // Card 1
+      document.getElementById("ocrCard").style.display = "block";
+      document.getElementById("boldText").innerText = data.big_words ? data.big_words.join(", ") : "None";
+
+      // Card 2
+      const d = data;
+      document.getElementById("detailsText").innerHTML = `
+        <p><strong>Medicine Name:</strong> ${d.matched_medicine_name}</p>
+        <p><strong>Price:</strong> ₹ ${d.price}</p>
+        <p><strong>Manufacturer:</strong> ${d.manufacturer}</p>
+        <p><strong>Type:</strong> ${d.type}</p>
+        <p><strong>Composition:</strong> ${d.composition}</p>
+        <p><strong>Description:</strong> ${d.description}</p>
+        <p><strong>Side Effects:</strong> ${d.side_effects}</p>
+        <p><strong>Drug Interactions:</strong> ${d.drug_interactions}</p>
+        <p><strong>Match Score:</strong> ${d.match_score}%</p>
+      `;
+      document.getElementById("resultCard").style.display = "block";
+    })
+    .catch(err => {
+      alert("Error contacting backend.");
+      document.getElementById("loadingOverlay").style.display = "none";
+      console.error(err);
+    });
+});
+</script>
+</body>
+</html>
