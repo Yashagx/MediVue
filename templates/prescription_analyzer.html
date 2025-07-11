@@ -1,93 +1,195 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Prescription Analyzer - MediVue</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/home.css') }}">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        body {
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
-            margin: 0;
-            font-family: 'Segoe UI', sans-serif;
-            background-color: #f8f9fa;
-        }
+  <meta charset="UTF-8">
+  <title>Prescription Analyzer - MediVue</title>
+  <link rel="stylesheet" href="static/css/home.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #f8f9fa;
+    }
 
-        .features-container {
-            flex: 1;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 2rem;
-        }
+    .features-container {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 2rem;
+    }
 
-        .feature-details {
-            background: #ffffff;
-            padding: 2.5rem 3rem;
-            border-radius: 16px;
-            box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
-            max-width: 480px;
-            width: 100%;
-            text-align: center;
-        }
+    .feature-details {
+      background: #ffffff;
+      padding: 2rem 2.5rem;
+      border-radius: 16px;
+      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
+      max-width: 680px;
+      width: 100%;
+    }
 
-        .feature-details i {
-            font-size: 2.8rem;
-            margin-bottom: 15px;
-            color: #01796F;
-        }
+    .feature-details h2 {
+      font-size: 1.6rem;
+      margin-bottom: 1rem;
+      color: #333;
+    }
 
-        .feature-details h2 {
-            font-size: 1.6rem;
-            margin-bottom: 1rem;
-            color: #333;
-        }
+    .feature-details p, .feature-details label {
+      font-size: 1rem;
+      color: #555;
+      margin-bottom: 1rem;
+    }
 
-        .feature-details p {
-            font-size: 1rem;
-            color: #555;
-            margin-bottom: 1.5rem;
-        }
+    .feature-details input[type="file"] {
+      margin-bottom: 1rem;
+    }
 
-        button {
-            background-color: #01796F;
-            color: white;
-            padding: 0.75rem 1.2rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
+    button {
+      background-color: #01796F;
+      color: white;
+      padding: 0.65rem 1rem;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
 
-        button:hover {
-            background-color: #01665c;
-        }
+    button:hover {
+      background-color: #01665c;
+    }
 
-        .btn-secondary {
-            margin-left: 10px;
-        }
-    </style>
+    .result-box {
+      background-color: #f1f1f1;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1.5rem;
+      white-space: pre-wrap;
+    }
+
+    select {
+      margin-left: 1rem;
+      padding: 0.3rem;
+    }
+
+    .pdf-link {
+      margin-top: 1rem;
+      display: inline-block;
+      color: #007bff;
+    }
+  </style>
 </head>
 <body>
 
 <nav class="navbar">
-    <div class="nav-container">
-        <div class="logo">MediVue</div>
-        <a href="/"><button class="btn-secondary">Home</button></a>
-    </div>
+  <div class="nav-container">
+    <div class="logo">MediVue</div>
+    <a href="/"><button class="btn-secondary">Home</button></a>
+  </div>
 </nav>
 
 <section class="features-container">
-    <div class="feature-details">
-        <i class="fas fa-file-prescription"></i>
-        <h2>Prescription Analyzer</h2>
-        <p>This feature will process your prescription image and extract medicine names (OCR-based).</p>
-        <button onclick="runApp()">Start Analyzer (Dummy)</button>
+  <div class="feature-details">
+    <h2><i class="fas fa-file-prescription"></i> Prescription Analyzer</h2>
+    <p>Upload a prescription image to extract medicines, warnings, interactions, and more.</p>
+
+    <form id="analyzerForm">
+      <label for="fileInput">Choose Prescription Image:</label><br>
+      <input type="file" id="fileInput" name="file" accept="image/*" required><br>
+      <button type="submit">Analyze Prescription</button>
+    </form>
+
+    <div id="result" class="result-box" style="display: none;"></div>
+
+    <div id="translationBlock" style="margin-top: 1rem; display: none;">
+      <label for="language">Translate to:</label>
+      <select id="language">
+        <option value="hi">Hindi</option>
+        <option value="ta">Tamil</option>
+        <option value="bn">Bengali</option>
+        <option value="mr">Marathi</option>
+        <option value="gu">Gujarati</option>
+        <option value="te">Telugu</option>
+      </select>
+      <button type="button" onclick="translateOutput()">Translate</button>
+      <div id="translatedText" class="result-box" style="display: none;"></div>
     </div>
+  </div>
 </section>
+
+<script>
+document.getElementById("analyzerForm").addEventListener("submit", function(e) {
+  e.preventDefault();
+
+  const fileInput = document.getElementById("fileInput").files[0];
+  if (!fileInput) {
+    alert("Please upload a prescription image.");
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("file", fileInput);
+
+  fetch("http://127.0.0.1:5002/analyze-prescription", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.error) {
+      document.getElementById("result").textContent = "Error: " + data.error;
+    } else {
+      const medList = (data.medicines || []).map(m => `
+- Name: ${m.name}
+  Usage: ${m.usage}
+  Dosage: ${m.dosage}
+  Side Effects: ${m.side_effects}
+  Warnings: ${m.warnings}
+      `).join('\n');
+
+      const resultText = `📄 Extracted Text:\n${data.extracted_text || 'N/A'}\n\n💊 Medicines:\n${medList}\n\n⚠️ Interactions:\n${(data.interactions || []).join('\n')}\n\n📋 Dosage Check: ${data.dosage_check?.valid ? '✔ Valid' : '❌ Issues: ' + (data.dosage_check?.flagged || []).join(', ')}\n\n📄 PDF Report: ${data.pdf_path || 'Not generated'}`;
+
+      document.getElementById("result").style.display = "block";
+      document.getElementById("result").textContent = resultText;
+      document.getElementById("translationBlock").style.display = "block";
+    }
+  })
+  .catch(err => {
+    console.error("Error:", err);
+    document.getElementById("result").style.display = "block";
+    document.getElementById("result").textContent = "Error contacting backend.";
+  });
+});
+
+function translateOutput() {
+  const text = document.getElementById("result").textContent;
+  const lang = document.getElementById("language").value;
+
+  const formData = new FormData();
+  formData.append("details_text", text);
+  formData.append("target_lang", lang);
+
+  fetch("http://127.0.0.1:5002/translate-prescription", {
+    method: "POST",
+    body: formData
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.translated_text) {
+      const box = document.getElementById("translatedText");
+      box.textContent = data.translated_text;
+      box.style.display = "block";
+    }
+  })
+  .catch(err => {
+    console.error("Translation error:", err);
+  });
+}
+</script>
 
 </body>
 </html>
