@@ -1,22 +1,25 @@
 # MediVue
 
-MediVue is a lightweight medical utility tool designed to assist with basic medicine-related tasks.
+MediVue is a smart healthcare assistant in development, aimed at improving access to basic medical information using modern AI technologies.
 
-## Features
-- Image-based extraction
-- Basic information matching
-- Audio and translation support
+## Team
 
-## Setup
-Install dependencies:
+- **Yash** (Lead Developer)
+- **Ayushman** (Backend, OCR & AI)
+- **Gargi** (Frontend, Chatbot, AI Integration)
 
+## Key Modules
 
+- Image-based extraction and analysis
+- AI-powered chat for basic medical queries
+- Multilingual and accessibility features
 
-Run the app:
+## Tech Stack
 
+- Python (FastAPI)
+- HTML/JS (Frontend)
+- OCR, AI APIs
 
+## Development Status
 
-
----
-
-*Note: This is an early-stage prototype. Detailed documentation and features will be added soon.*
+Project is under active development. More details and documentation will be shared in future updates.
