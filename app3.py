@@ -3,6 +3,10 @@ from fastapi.responses import JSONResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from deep_translator import GoogleTranslator
 from fpdf import FPDF
+from sumy.parsers.plaintext import PlaintextParser
+from sumy.nlp.tokenizers import Tokenizer
+from sumy.summarizers.lsa import LsaSummarizer
+from gtts import gTTS
 import cv2
 import numpy as np
 import pytesseract
@@ -28,7 +32,7 @@ def extract_text(image_bytes):
     nparr = np.frombuffer(image_bytes, np.uint8)
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C, 
+    thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_MEAN_C,
                                    cv2.THRESH_BINARY, 15, 10)
     return pytesseract.image_to_string(thresh)
 
@@ -57,7 +61,6 @@ def fetch_details(meds):
     return result
 
 def detect_interactions(meds):
-    # Dummy logic – replace with real interaction database
     return ["Avoid combining Paracetamol and Ibuprofen without prescription."] if "Paracetamol" in meds and "Ibuprofen" in meds else []
 
 def validate_dosage(text):
@@ -76,6 +79,15 @@ def create_pdf_report(text, meds, interaction_notes, validation, filename):
     pdf.multi_cell(0, 10, "Dosage Validation:\n" +
                    ("Valid" if validation["valid"] else f"Issues: {', '.join(validation['flagged'])}") + "\n\n")
     pdf.output(filename)
+
+def summarize_text(text, max_chars=4000):
+    if len(text) <= max_chars:
+        return text
+    parser = PlaintextParser.from_string(text, Tokenizer("english"))
+    summarizer = LsaSummarizer()
+    summary = summarizer(parser.document, 30)  # 30 sentences (adjust as needed)
+    summarized_text = " ".join(str(sentence) for sentence in summary)
+    return summarized_text[:max_chars]
 
 @app.post("/analyze-prescription")
 async def analyze_prescription(file: UploadFile = File(...)):
@@ -105,7 +117,8 @@ async def analyze_prescription(file: UploadFile = File(...)):
 @app.post("/translate-prescription")
 async def translate_prescription(details_text: str = Form(...), target_lang: str = Form(...)):
     try:
-        translated = GoogleTranslator(source='auto', target=target_lang).translate(details_text)
+        summarized = summarize_text(details_text, max_chars=4000)
+        translated = GoogleTranslator(source='auto', target=target_lang).translate(summarized)
         return JSONResponse(content={"translated_text": translated})
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
@@ -114,3 +127,19 @@ async def translate_prescription(details_text: str = Form(...), target_lang: str
 async def get_report(filename: str):
     path = f"pdfs/{filename}"
     return FileResponse(path, media_type="application/pdf")
+
+@app.post("/generate-audio")
+async def generate_audio(details_text: str = Form(...), lang: str = Form(...)):
+    try:
+        filename = f"speech_{uuid.uuid4().hex}.mp3"
+        filepath = f"audio/{filename}"
+        os.makedirs("audio", exist_ok=True)
+        gTTS(text=details_text, lang=lang).save(filepath)
+        return JSONResponse(content={"audio_path": f"/get-audio/{filename}"})
+    except Exception as e:
+        return JSONResponse(content={"error": str(e)}, status_code=500)
+
+@app.get("/get-audio/{filename}")
+async def get_audio(filename: str):
+    path = f"audio/{filename}"
+    return FileResponse(path, media_type="audio/mpeg")

@@ -1,193 +1,320 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Prescription Analyzer - MediVue</title>
-  <link rel="stylesheet" href="static/css/home.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <meta charset="UTF-8" />
+  <title>MediVue - Prescription Analyzer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
   <style>
     body {
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
       margin: 0;
       font-family: 'Segoe UI', sans-serif;
       background-color: #f8f9fa;
     }
 
-    .features-container {
-      flex: 1;
+    .navbar {
+      background-color: #034b45;
+      color: white;
+      padding: 1rem 2rem;
       display: flex;
-      justify-content: center;
-      align-items: flex-start;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .main-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
       padding: 2rem;
     }
 
-    .feature-details {
-      background: #ffffff;
-      padding: 2rem 2.5rem;
-      border-radius: 16px;
-      box-shadow: 0 6px 25px rgba(0, 0, 0, 0.08);
-      max-width: 680px;
+    .card {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 6px 15px rgba(0, 0, 0, 0.08);
+      padding: 1.5rem;
+    }
+
+    .card h2 {
+      color: #034b45;
+      margin-bottom: 1rem;
+    }
+
+    input[type="file"],
+    button,
+    select {
+      padding: 0.6rem;
       width: 100%;
-    }
-
-    .feature-details h2 {
-      font-size: 1.6rem;
-      margin-bottom: 1rem;
-      color: #333;
-    }
-
-    .feature-details p, .feature-details label {
+      margin-top: 0.5rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
       font-size: 1rem;
-      color: #555;
-      margin-bottom: 1rem;
-    }
-
-    .feature-details input[type="file"] {
-      margin-bottom: 1rem;
     }
 
     button {
       background-color: #01796F;
       color: white;
-      padding: 0.65rem 1rem;
       border: none;
-      border-radius: 8px;
-      font-size: 1rem;
       cursor: pointer;
-      transition: background-color 0.3s ease;
     }
 
     button:hover {
       background-color: #01665c;
     }
 
+    #loadingOverlay {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(255, 255, 255, 0.8);
+      display: none;
+      justify-content: center;
+      align-items: center;
+      z-index: 999;
+      font-size: 1.5rem;
+      font-weight: bold;
+    }
+
     .result-box {
       background-color: #f1f1f1;
       border-radius: 8px;
       padding: 1rem;
-      margin-top: 1.5rem;
+      margin-top: 1rem;
       white-space: pre-wrap;
-    }
-
-    select {
-      margin-left: 1rem;
-      padding: 0.3rem;
+      max-height: 300px;
+      overflow-y: auto;
     }
 
     .pdf-link {
       margin-top: 1rem;
       display: inline-block;
-      color: #007bff;
+      text-decoration: none;
+      color: white;
+      background-color: #007bff;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+    }
+
+    .pdf-link:hover {
+      background-color: #0056b3;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    #uploadedImage {
+      width: 100%;
+      margin-top: 1rem;
+      max-height: 250px;
+      object-fit: contain;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      display: none;
+    }
+
+    #translationOverlay {
+      display: none;
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      background: rgba(0,0,0,0.6);
+      z-index: 1000;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .translation-box {
+      background: white;
+      padding: 1.5rem;
+      border-radius: 12px;
+      width: 500px;
+      max-height: 80%;
+      overflow-y: auto;
+      position: relative;
+    }
+
+    .translation-box h3 {
+      margin-top: 0;
+    }
+
+    .audio-controls {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .close-btn {
+      position: absolute;
+      top: 8px;
+      right: 12px;
+      cursor: pointer;
+      font-size: 20px;
     }
   </style>
 </head>
 <body>
 
+<div id="loadingOverlay">⏳ Processing...</div>
+
 <nav class="navbar">
-  <div class="nav-container">
-    <div class="logo">MediVue</div>
-    <a href="/"><button class="btn-secondary">Home</button></a>
-  </div>
+  <div class="logo">MediVue</div>
 </nav>
 
-<section class="features-container">
-  <div class="feature-details">
-    <h2><i class="fas fa-file-prescription"></i> Prescription Analyzer</h2>
-    <p>Upload a prescription image to extract medicines, warnings, interactions, and more.</p>
-
-    <form id="analyzerForm">
-      <label for="fileInput">Choose Prescription Image:</label><br>
-      <input type="file" id="fileInput" name="file" accept="image/*" required><br>
+<div class="main-wrapper">
+  <!-- Upload Section -->
+  <div class="card">
+    <h2><i class="fas fa-file-medical"></i> Upload Prescription</h2>
+    <form id="uploadForm">
+      <input type="file" id="fileInput" name="file" accept="image/*" required />
       <button type="submit">Analyze Prescription</button>
     </form>
+    <img id="uploadedImage" />
+  </div>
 
+  <!-- Results -->
+  <div class="card">
+    <h2><i class="fas fa-notes-medical"></i> Analysis Result</h2>
     <div id="result" class="result-box" style="display: none;"></div>
 
-    <div id="translationBlock" style="margin-top: 1rem; display: none;">
-      <label for="language">Translate to:</label>
-      <select id="language">
-        <option value="hi">Hindi</option>
-        <option value="ta">Tamil</option>
-        <option value="bn">Bengali</option>
-        <option value="mr">Marathi</option>
-        <option value="gu">Gujarati</option>
-        <option value="te">Telugu</option>
+    <div class="btn-row" id="downloadBlock" style="display: none;">
+      <a id="pdfLink" href="#" target="_blank" class="pdf-link">📄 Download PDF Report</a>
+    </div>
+
+    <div class="audio-controls" id="translationControls" style="display: none;">
+      <select id="languageSelect">
+        <option value="en">English</option>
+        <option value="hi">Hindi - हिन्दी</option>
+        <option value="ta">Tamil - தமிழ்</option>
+        <option value="te">Telugu - తెలుగు</option>
+        <option value="bn">Bengali - বাংলা</option>
+        <option value="gu">Gujarati - ગુજરાતી</option>
+        <option value="ml">Malayalam - മലയാളം</option>
+        <option value="mr">Marathi - मराठी</option>
+        <option value="pa">Punjabi - ਪੰਜਾਬੀ</option>
+        <option value="kn">Kannada - ಕನ್ನಡ</option>
+        <option value="ur">Urdu - اردو</option>
       </select>
-      <button type="button" onclick="translateOutput()">Translate</button>
-      <div id="translatedText" class="result-box" style="display: none;"></div>
+      <button onclick="translateAndSpeak()">🎧 Play Voice</button>
+      <button onclick="stopSpeech()">🔇 Mute</button>
     </div>
   </div>
-</section>
+</div>
+
+<!-- Translation Overlay -->
+<div id="translationOverlay">
+  <div class="translation-box">
+    <div class="close-btn" onclick="closeTranslation()">&times;</div>
+    <h3>Translated Text</h3>
+    <div id="translatedOutput"></div>
+    <audio id="translatedAudio" controls style="width: 100%; margin-top: 10px;"></audio>
+  </div>
+</div>
 
 <script>
-document.getElementById("analyzerForm").addEventListener("submit", function(e) {
+document.getElementById("uploadForm").addEventListener("submit", function (e) {
   e.preventDefault();
 
-  const fileInput = document.getElementById("fileInput").files[0];
-  if (!fileInput) {
-    alert("Please upload a prescription image.");
-    return;
-  }
+  const file = document.getElementById("fileInput").files[0];
+  if (!file) return alert("Please select a file.");
 
   const formData = new FormData();
-  formData.append("file", fileInput);
+  formData.append("file", file);
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById("uploadedImage").src = reader.result;
+    document.getElementById("uploadedImage").style.display = "block";
+  };
+  reader.readAsDataURL(file);
+
+  document.getElementById("loadingOverlay").style.display = "flex";
 
   fetch("http://127.0.0.1:5002/analyze-prescription", {
     method: "POST",
     body: formData
   })
-  .then(res => res.json())
-  .then(data => {
-    if (data.error) {
-      document.getElementById("result").textContent = "Error: " + data.error;
-    } else {
-      const medList = (data.medicines || []).map(m => `
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("loadingOverlay").style.display = "none";
+
+      if (data.error) {
+        document.getElementById("result").textContent = "Error: " + data.error;
+      } else {
+        const medList = (data.medicines || []).map(m => `
 - Name: ${m.name}
   Usage: ${m.usage}
   Dosage: ${m.dosage}
   Side Effects: ${m.side_effects}
   Warnings: ${m.warnings}
-      `).join('\n');
+        `).join('\n');
 
-      const resultText = `📄 Extracted Text:\n${data.extracted_text || 'N/A'}\n\n💊 Medicines:\n${medList}\n\n⚠️ Interactions:\n${(data.interactions || []).join('\n')}\n\n📋 Dosage Check: ${data.dosage_check?.valid ? '✔ Valid' : '❌ Issues: ' + (data.dosage_check?.flagged || []).join(', ')}\n\n📄 PDF Report: ${data.pdf_path || 'Not generated'}`;
+        const resultText = `📄 Extracted Text:\n${data.extracted_text || 'N/A'}\n\n💊 Medicines:\n${medList}\n\n⚠️ Interactions:\n${(data.interactions || []).join('\n')}\n\n📋 Dosage Check: ${data.dosage_check?.valid ? '✔ Valid' : '❌ Issues: ' + (data.dosage_check?.flagged || []).join(', ')}`;
 
+        document.getElementById("result").style.display = "block";
+        document.getElementById("result").textContent = resultText;
+
+        if (data.pdf_path) {
+          document.getElementById("pdfLink").href = `http://127.0.0.1:5002${data.pdf_path}`;
+          document.getElementById("downloadBlock").style.display = "flex";
+        }
+
+        document.getElementById("translationControls").style.display = "flex";
+      }
+    })
+    .catch(err => {
+      document.getElementById("loadingOverlay").style.display = "none";
       document.getElementById("result").style.display = "block";
-      document.getElementById("result").textContent = resultText;
-      document.getElementById("translationBlock").style.display = "block";
-    }
-  })
-  .catch(err => {
-    console.error("Error:", err);
-    document.getElementById("result").style.display = "block";
-    document.getElementById("result").textContent = "Error contacting backend.";
-  });
+      document.getElementById("result").textContent = "Error contacting backend.";
+      console.error(err);
+    });
 });
 
-function translateOutput() {
+function translateAndSpeak() {
+  const lang = document.getElementById("languageSelect").value;
   const text = document.getElementById("result").textContent;
-  const lang = document.getElementById("language").value;
 
-  const formData = new FormData();
-  formData.append("details_text", text);
-  formData.append("target_lang", lang);
+  document.getElementById("loadingOverlay").style.display = "flex";
 
   fetch("http://127.0.0.1:5002/translate-prescription", {
     method: "POST",
-    body: formData
+    body: new URLSearchParams({ details_text: text, target_lang: lang })
   })
-  .then(res => res.json())
-  .then(data => {
-    if (data.translated_text) {
-      const box = document.getElementById("translatedText");
-      box.textContent = data.translated_text;
-      box.style.display = "block";
-    }
-  })
-  .catch(err => {
-    console.error("Translation error:", err);
-  });
+    .then(res => res.json())
+    .then(data => {
+      const translated = data.translated_text || "Translation failed.";
+      document.getElementById("translatedOutput").innerText = translated;
+      document.getElementById("translationOverlay").style.display = "flex";
+
+      return fetch("http://127.0.0.1:5002/generate-audio", {
+        method: "POST",
+        body: new URLSearchParams({ details_text: translated, lang: lang })
+      });
+    })
+    .then(res => res.json())
+    .then(data => {
+      document.getElementById("translatedAudio").src = "http://127.0.0.1:5002" + data.audio_path;
+      document.getElementById("translatedAudio").play();
+    })
+    .catch(err => {
+      alert("Translation or audio generation failed.");
+      console.error(err);
+    })
+    .finally(() => {
+      document.getElementById("loadingOverlay").style.display = "none";
+    });
+}
+
+function stopSpeech() {
+  document.getElementById("translatedAudio").pause();
+}
+
+function closeTranslation() {
+  document.getElementById("translationOverlay").style.display = "none";
+  stopSpeech();
 }
 </script>
 
